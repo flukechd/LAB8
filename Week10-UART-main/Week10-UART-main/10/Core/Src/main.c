@@ -46,13 +46,15 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 char TxDataBuffer[32] =
 { 0 };
+char KxDataBuffer[32] =
+{ 0 };
 char RxDataBuffer[32] =
 { 0 };
 uint64_t timestamp=0;
 uint64_t y=1;
 uint16_t STATE_Display=0;
-float f = 1;
-float fo=0;
+uint64_t f = 1;
+uint64_t fo=0;
 enum _StateDisplay
 {
   StateDisplay_Start = 0,
@@ -61,7 +63,7 @@ enum _StateDisplay
   StateDisplay_Menu1_Print = 20,
   StateDisplay_Menu1_WaitInput,
   StateDisplay_Menu2_Print = 30,
-  StateDisplay_Menu2_WaitInput
+  StateDisplay_Menu2_WaitInput,
 
 };
 /* USER CODE END PV */
@@ -93,7 +95,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+ HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -127,7 +129,6 @@ int main(void)
 		int16_t inputchar = UARTRecieveIT();
 		if(inputchar!=-1)
 		{
-
 			sprintf(TxDataBuffer, "ReceivedChar:[%c]\r\n", inputchar);
 			HAL_UART_Transmit(&huart2, (uint8_t*)TxDataBuffer, strlen(TxDataBuffer), 1000);
 		}
@@ -154,7 +155,12 @@ int main(void)
 	            break;
 	          case '1':
 	          	STATE_Display = StateDisplay_Menu2_Print;
+	          	break;
 	          default:
+	          {
+	         	char temp[]="You pressed the wrong button, please try again.\r\n";
+	         	HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	          }
 	            STATE_Display = StateDisplay_MenuRoot_Print;
 	            break;
 	          }
@@ -170,6 +176,10 @@ int main(void)
 	            STATE_Display = StateDisplay_Menu1_WaitInput;
 	            break;
 	          default:
+	          {
+	         	char temp[]="You pressed the wrong button, please try again.\r\n";
+	         	HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	         }
 	            STATE_Display = StateDisplay_MenuRoot_Print;
 	            break;
 	          }
@@ -189,65 +199,91 @@ int main(void)
 				fo=f;
 				f=0;
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+				{
+			     char temp[]="LED OFF\r\n ";
+			     HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+				}
 				y=0;
 				}
                 else
                 {
                 f=fo;
+                {
+                 char temp[]="LED ON\r\n ";
+                 HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+                }
                 y=1;
                 }
 	           	break;
 	           case 'a':
 	           	f += 1;
+	           	sprintf(KxDataBuffer, "Freq=%dHz \r\n", f);
+	           	HAL_UART_Transmit(&huart2, (uint8_t*)KxDataBuffer, strlen(KxDataBuffer), 1000);
 	           	break;
 	           case 's':
 	           	f -= 1;
+	           	sprintf(KxDataBuffer, "Freq=%dHz \r\n", f);
+	           	HAL_UART_Transmit(&huart2, (uint8_t*)KxDataBuffer, strlen(KxDataBuffer), 1000);
 	           	break;
 	           default:
-	           	STATE_Display = StateDisplay_Menu2_Print;
+	           {
+	            char temp[]="You pressed the wrong button, please try again.\r\n";
+	        	HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	           }
+	           	STATE_Display = StateDisplay_Menu1_Print;
 	           	break;
 	           }
 	           break;
-//	           case StateDisplay_Menu2_Print: //display state
-//	                 printf("************\n");
-//	                 printf("Menu 2\n");
-//	                 printf("************\n");
-//	                 printf("a\n");
-//	                 printf("s\n");
-//	                 printf("d\n");
-//	                 printf("+\n");
-//	                 printf("-\n");
-//	                 printf("\n");
-//	                 STATE_Display = StateDisplay_Menu2_WaitInput;
-//	                 break;
-
-//	          case StateDisplay_Menu2_WaitInput: //make decision state
-//	            switch (inputchar)
-//	            {
-//	            case 0:
-//	              break;
-//	            case 'd': // back to main manu(10)
-//	              STATE_Display = StateDisplay_MenuRoot_Print;
-//	              break;
-//	            case 'a': // back to main manu(10)
-//	              sled = 1;
-//	              printf("LED On\n");
-//	              break;
-//	            case 's': // back to main manu(10)
-//	              sled = 0;
-//	              printf("LED Off\n");
-//	              break;
-//	            case '+': // back to main manu(10)
-//	              f += 0.5;
-//	              break;
-//	            case '-': // back to main manu(10)
-//	              f -= 0.5;
-//	              break;
-//	            default: //show error
-//	              STATE_Display = StateDisplay_Menu2_Print;
-//	              break;
-//	            }
-//	            break;
+	           case StateDisplay_Menu2_Print: //display one time state
+	          	          switch (inputchar)
+	          	          {
+	          	          case -1:
+	          	            {
+	          	         	 char temp[]="Menu Button Status\r\n Press or Unpress\r\n x.Back \r\n";
+	          	         	 HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	          	            }
+	          	            STATE_Display = StateDisplay_Menu2_WaitInput;
+	          	            break;
+	          	          default:
+	          	           {
+	          	       	     char temp[]="You pressed the wrong button, please try again.\r\n";
+	          	       	     HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	          	       	   }
+	          	            STATE_Display = StateDisplay_MenuRoot_Print;
+	          	            break;
+	          	          }
+	          	          break;
+	          case StateDisplay_Menu2_WaitInput:
+	            switch (inputchar)
+	            {
+	            case -1:
+	            	if(HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)==GPIO_PIN_RESET)
+	                {
+	            		{
+	            	     char temp[]="PRESS\r\n";
+	            		 HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	            	    }
+	                }
+	            	else
+	            	{
+	            		{
+	            		 char temp[]="UNPRESS\r\n";
+	            		 HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	            		}
+	            	}
+	              break;
+	            case 'x':
+	              STATE_Display = StateDisplay_MenuRoot_Print;
+	              break;
+	            default:
+	            {
+	           	  char temp[]="You pressed the wrong button, please try again.\r\n";
+	           	  HAL_UART_Transmit(&huart2, (uint8_t*)temp, strlen(temp),10);
+	           	}
+	              STATE_Display = StateDisplay_Menu2_Print;
+	              break;
+	            }
+	            break;
 	          }
 	    if(HAL_GetTick()-timestamp>=500/f)
 	   	  			{
@@ -261,7 +297,6 @@ int main(void)
 	   	  					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 	   	  				}
 	   	  			}
-
 
 		/*This section just simmulate Work Load*/
 
